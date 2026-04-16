@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1220" />
+  <title>Roster</title>
+  <style>
+    :root{
+      --bg:#0b1220; --card:#0f1a33; --muted:#8ea0c5; --text:#e9efff;
+      --grid:#1b2a52; --accent:#6ea8ff;
+      --work:#1f6feb; --off:#2ea043; --leave:#d29922;
+      --chip:#101c39;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:10px}
+    .top{
+      display:flex; gap:8px; align-items:center; justify-content:space-between;
+      padding:8px 6px;
+    }
+    .left, .right{display:flex; gap:8px; align-items:center}
+    .btn{
+      border:1px solid var(--grid);
+      background:transparent; color:var(--text);
+      padding:8px 10px; border-radius:10px; font-weight:600;
+      cursor:pointer; user-select:none;
+    }
+    .btn:active{transform:translateY(1px)}
+    .title{
+      font-size:16px; font-weight:800; letter-spacing:.2px;
+      display:flex; align-items:center; gap:10px;
+    }
+    .pill{
+      font-size:12px; color:var(--muted);
+      border:1px solid var(--grid);
+      padding:4px 8px; border-radius:999px;
+      background:rgba(255,255,255,.02);
+    }
+
+    .legend{
+      display:flex; gap:10px; flex-wrap:wrap;
+      padding:6px 6px 10px 6px;
+      color:var(--muted); font-size:12px;
+    }
+    .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+    .dot.work{background:var(--work)}
+    .dot.off{background:var(--off)}
+    .dot.leave{background:var(--leave)}
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--grid);
+      border-radius:16px;
+      overflow:hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+
+    .dow{
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap:0;
+      border-bottom:1px solid var(--grid);
+      background:rgba(255,255,255,.02);
+    }
+    .dow div{
+      padding:10px 8px;
+      font-size:12px;
+      color:var(--muted);
+      text-align:center;
+      font-weight:700;
+      letter-spacing:.2px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+    }
+
+    .cell{
+      border-right:1px solid var(--grid);
+      border-bottom:1px solid var(--grid);
+      min-height:78px;
+      padding:8px 8px 6px 8px;
+      position:relative;
+      background:rgba(255,255,255,.01);
+      cursor:pointer;
+      user-select:none;
+    }
+    .cell:nth-child(7n){border-right:0}
+    .cell.muted{opacity:.35}
+    .day{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:800;
+    }
+    .today .day{
+      color:var(--text);
+    }
+    .today::after{
+      content:"";
+      position:absolute; inset:6px;
+      border:1px solid rgba(110,168,255,.45);
+      border-radius:12px;
+      pointer-events:none;
+    }
+
+    .rows{margin-top:8px; display:flex; flex-direction:column; gap:6px}
+    .row{display:flex; align-items:center; justify-content:space-between; gap:8px}
+    .name{font-size:11px; color:var(--muted); font-weight:700}
+    .chips{display:flex; gap:6px}
+    .chip{
+      font-size:11px;
+      padding:4px 8px;
+      border-radius:999px;
+      background:var(--chip);
+      border:1px solid var(--grid);
+      font-weight:800;
+      line-height:1;
+    }
+    .chip.work{color:#dbe9ff; border-color:rgba(31,111,235,.55); background:rgba(31,111,235,.15)}
+    .chip.off{color:#d9ffe2; border-color:rgba(46,160,67,.55); background:rgba(46,160,67,.14)}
+    .chip.leave{color:#fff3d4; border-color:rgba(210,153,34,.55); background:rgba(210,153,34,.14)}
+
+    .footer{
+      display:flex; gap:8px; flex-wrap:wrap;
+      padding:10px 6px 0 6px;
+      align-items:center;
+      color:var(--muted);
+      font-size:12px;
+    }
+    input[type="file"]{display:none}
+    .small{font-size:12px;color:var(--muted)}
+    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      border:1px solid var(--grid); padding:2px 6px; border-radius:8px; background:rgba(255,255,255,.02)}
+    @media (max-width:520px){
+      .wrap{padding:8px}
+      .btn{padding:8px 9px}
+      .cell{min-height:74px}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="left">
+      <button class="btn" id="prev">◀</button>
+      <div class="title">
+        <span id="monthLabel">Month YYYY</span>
+        <span class="pill" id="tapHint">Tap day to toggle</span>
+      </div>
+      <button class="btn" id="next">▶</button>
+    </div>
+    <div class="right">
+      <button class="btn" id="todayBtn">Today</button>
+      <button class="btn" id="exportBtn">Export</button>
+      <label class="btn" for="importFile">Import</label>
+      <input id="importFile" type="file" accept="application/json" />
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><span class="dot work"></span>Work</span>
+    <span><span class="dot off"></span>Off</span>
+    <span><span class="dot leave"></span>Leave</span>
+    <span class="small">Tip: tap same day repeatedly to cycle status</span>
+  </div>
+
+  <div class="card">
+    <div class="dow">
+      <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <div class="footer">
+    <span>Shortcuts: <span class="kbd">Shift</span> tap toggles Wife first • normal tap toggles You first</span>
+    <button class="btn" id="clearMonthBtn">Clear month</button>
+    <span id="statusMsg"></span>
+  </div>
+</div>
+
+<script>
+/**
+ * Roster app - single file
+ * Data model:
+ * store[YYYY-MM-DD] = { me: "work|off|leave", wife: "work|off|leave" }
+ */
+
+const STORAGE_KEY = "roster_v1_store";
+const NAMES_KEY = "roster_v1_names";
+
+const stateCycle = ["off","work","leave"]; // cycle order
+
+let store = loadStore();
+let names = loadNames();
+
+let view = new Date();
+view.setDate(1);
+
+const gridEl = document.getElementById("grid");
+const monthLabelEl = document.getElementById("monthLabel");
+const statusMsgEl = document.getElementById("statusMsg");
+
+document.getElementById("prev").addEventListener("click", ()=>{ shiftMonth(-1); });
+document.getElementById("next").addEventListener("click", ()=>{ shiftMonth(1); });
+document.getElementById("todayBtn").addEventListener("click", ()=>{
+  view = new Date(); view.setDate(1);
+  render();
+});
+document.getElementById("clearMonthBtn").addEventListener("click", clearMonth);
+document.getElementById("exportBtn").addEventListener("click", exportJSON);
+document.getElementById("importFile").addEventListener("change", importJSON);
+
+render();
+
+/* ---------- Rendering ---------- */
+
+function render(){
+  const y = view.getFullYear();
+  const m = view.getMonth();
+
+  const label = view.toLocaleString(undefined,{month:"long",year:"numeric"});
+  monthLabelEl.textContent = label;
+
+  gridEl.innerHTML = "";
+
+  const firstDay = new Date(y,m,1);
+  const lastDay = new Date(y,m+1,0);
+
+  // convert to Monday-first index (Mon=0..Sun=6)
+  const jsDow = firstDay.getDay(); // Sun=0..Sat=6
+  const mondayFirst = (jsDow + 6) % 7;
+
+  const totalCells = 42; // 6 weeks grid
+  const startDate = new Date(y,m,1 - mondayFirst);
+
+  const today = new Date();
+  const todayKey = toKey(today);
+
+  for(let i=0;i<totalCells;i++){
+    const d = new Date(startDate);
+    d.setDate(startDate.getDate()+i);
+
+    const inMonth = d.getMonth() === m;
+    const key = toKey(d);
+
+    const cell = document.createElement("div");
+    cell.className = "cell" + (inMonth ? "" : " muted") + (key===todayKey ? " today" : "");
+    cell.dataset.key = key;
+
+    const dayNum = document.createElement("div");
+    dayNum.className = "day";
+    dayNum.textContent = d.getDate();
+    cell.appendChild(dayNum);
+
+    const rows = document.createElement("div");
+    rows.className = "rows";
+
+    const rec = store[key] || {me:"off", wife:"off"};
+
+    rows.appendChild(makeRow(names.me, rec.me));
+    rows.appendChild(makeRow(names.wife, rec.wife));
+
+    cell.appendChild(rows);
+
+    // Tap behavior:
+    // normal tap toggles ME first; Shift+tap toggles WIFE first
+    cell.addEventListener("click", (e)=>{
+      const toggleWifeFirst = e.shiftKey;
+      toggleDay(key, toggleWifeFirst);
+      render(); // simple rerender
+    });
+
+    gridEl.appendChild(cell);
+  }
+
+  setStatus("");
+}
+
+function makeRow(name, val){
+  const row = document.createElement("div");
+  row.className = "row";
+
+  const left = document.createElement("div");
+  left.className = "name";
+  left.textContent = name;
+
+  const chips = document.createElement("div");
+  chips.className = "chips";
+
+  const chip = document.createElement("div");
+  chip.className = "chip " + val;
+  chip.textContent = val.toUpperCase();
+
+  chips.appendChild(chip);
+
+  row.appendChild(left);
+  row.appendChild(chips);
+
+  return row;
+}
+
+/* ---------- Actions ---------- */
+
+function shiftMonth(delta){
+  const y = view.getFullYear();
+  const m = view.getMonth();
+  view = new Date(y, m + delta, 1);
+  render();
+}
+
+function toggleDay(key, wifeFirst){
+  const rec = store[key] || {me:"off", wife:"off"};
+  if(wifeFirst){
+    rec.wife = nextState(rec.wife);
+  } else {
+    rec.me = nextState(rec.me);
+  }
+  store[key] = rec;
+  saveStore();
+}
+
+function nextState(current){
+  const idx = stateCycle.indexOf(current);
+  return stateCycle[(idx + 1) % stateCycle.length];
+}
+
+function clearMonth(){
+  const y = view.getFullYear();
+  const m = view.getMonth();
+  const first = new Date(y,m,1);
+  const last = new Date(y,m+1,0);
+
+  for(let d = new Date(first); d<=last; d.setDate(d.getDate()+1)){
+    delete store[toKey(d)];
+  }
+  saveStore();
+  render();
+  setStatus("Cleared this month.");
+}
+
+/* ---------- Storage ---------- */
+
+function loadStore(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){
+    return {};
+  }
+}
+function saveStore(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+}
+function loadNames(){
+  try{
+    const raw = localStorage.getItem(NAMES_KEY);
+    return raw ? JSON.parse(raw) : {me:"Me", wife:"Wife"};
+  }catch(e){
+    return {me:"Me", wife:"Wife"};
+  }
+}
+
+/* ---------- Export / Import ---------- */
+
+function exportJSON(){
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    names,
+    store
+  };
+  const blob = new Blob([JSON.stringify(payload,null,2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `roster-export-${monthStamp(new Date())}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  setStatus("Exported.");
+}
+
+function importJSON(e){
+  const file = e.target.files?.[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if(data && data.store){
+        store = data.store;
+        if(data.names) names = data.names;
+        saveStore();
+        localStorage.setItem(NAMES_KEY, JSON.stringify(names));
+        render();
+        setStatus("Imported.");
+      } else {
+        setStatus("Invalid file.");
+      }
+    }catch(err){
+      setStatus("Import failed.");
+    }
+    e.target.value = "";
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- Helpers ---------- */
+
+function toKey(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function monthStamp(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return `${y}${m}${day}`;
+}
+function setStatus(msg){
+  statusMsgEl.textContent = msg ? `• ${msg}` : "";
+}
+
+/* ---------- PWA (inline service worker + manifest) ----------
+   GitHub Pages needs separate files for best PWA support,
+   but we can generate them at runtime with Blob URLs.
+   This makes it still "one HTML file" with offline cache.
+*/
+
+(async function enablePWA(){
+  if(!("serviceWorker" in navigator)) return;
+
+  const swCode = `
+    const CACHE = "roster-cache-v1";
+    const CORE = [self.location.origin + self.location.pathname];
+    self.addEventListener("install", (e)=>{
+      e.waitUntil(
+        caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())
+      );
+    });
+    self.addEventListener("activate", (e)=>{
+      e.waitUntil(self.clients.claim());
+    });
+    self.addEventListener("fetch", (e)=>{
+      const req = e.request;
+      e.respondWith(
+        caches.match(req).then(res=> res || fetch(req).then(net=>{
+          const copy = net.clone();
+          caches.open(CACHE).then(c=>c.put(req, copy)).catch(()=>{});
+          return net;
+        }).catch(()=>caches.match(CORE[0])))
+      );
+    });
+  `;
+  const swBlob = new Blob([swCode], {type:"text/javascript"});
+  const swUrl = URL.createObjectURL(swBlob);
+
+  try{
+    await navigator.serviceWorker.register(swUrl, {scope: "./"});
+  }catch(e){
+    // ignore
+  }
+
+  // Create an in-memory manifest
+  const manifest = {
+    name: "Roster",
+    short_name: "Roster",
+    start_url: "./",
+    display: "standalone",
+    background_color: "#0b1220",
+    theme_color: "#0b1220",
+    icons: [
+      {
+        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Crect width='256' height='256' rx='48' fill='%230b1220'/%3E%3Cpath d='M64 84h128v24H64zm0 44h128v24H64zm0 44h128v24H64z' fill='%236ea8ff'/%3E%3C/svg%3E",
+        sizes: "256x256",
+        type: "image/svg+xml"
+      }
+    ]
+  };
+  const manBlob = new Blob([JSON.stringify(manifest)], {type:"application/manifest+json"});
+  const manUrl = URL.createObjectURL(manBlob);
+  const link = document.createElement("link");
+  link.rel = "manifest";
+  link.href = manUrl;
+  document.head.appendChild(link);
+})();
+</script>
+</body>
+</html>
